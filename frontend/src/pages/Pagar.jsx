@@ -217,18 +217,19 @@ export default function Pagar() {
                 <td>{item.status}</td>
 
                 <td>
-                  {item.arquivo_url ? (
-                    <a
-                      href={`https://api.meufinanceiro2.com${item.arquivo_url}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Abrir
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </td>
+  {item.arquivo_url ? (
+    <a
+      className="anexo-btn"
+      href={`https://api.meufinanceiro2.com${item.arquivo_url}`}
+      target="_blank"
+      rel="noreferrer"
+    >
+      📎 Ver
+    </a>
+  ) : (
+    "-"
+  )}
+</td>
 
                 <td>
                   <div className="actions">
