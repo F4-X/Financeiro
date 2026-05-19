@@ -1,5 +1,25 @@
 import { db } from "../database/db.js";
 
+function arquivoUrl(req) {
+  if (!req.file) return null;
+
+  return `/uploads/${req.file.filename}`;
+}
+
+function tratarItens(itens) {
+  if (!itens) return [];
+
+  if (typeof itens === "string") {
+    try {
+      return JSON.parse(itens);
+    } catch {
+      return [];
+    }
+  }
+
+  return itens;
+}
+
 export async function listarPagar(req, res) {
   const usuarioId = req.usuario.id;
 
@@ -18,13 +38,16 @@ export async function listarPagar(req, res) {
 
 export async function criarPagar(req, res) {
   const usuarioId = req.usuario.id;
+
   const {
     descricao,
     valor,
     vencimento,
-    observacao,
-    itens = []
+    observacao
   } = req.body;
+
+  const itens = tratarItens(req.body.itens);
+  const arquivo = arquivoUrl(req);
 
   const result = await db.query(
     `
@@ -35,9 +58,10 @@ export async function criarPagar(req, res) {
       vencimento,
       observacao,
       itens,
-      valor_pago
+      valor_pago,
+      arquivo_url
     )
-    VALUES ($1, $2, $3, $4, $5, $6, 0)
+    VALUES ($1, $2, $3, $4, $5, $6, 0, $7)
     RETURNING *
     `,
     [
@@ -46,7 +70,8 @@ export async function criarPagar(req, res) {
       Number(valor || 0),
       vencimento || null,
       observacao || null,
-      JSON.stringify(itens)
+      JSON.stringify(itens),
+      arquivo
     ]
   );
 
@@ -146,9 +171,11 @@ export async function editarPagar(req, res) {
     descricao,
     valor,
     vencimento,
-    observacao,
-    itens = []
+    observacao
   } = req.body;
+
+  const itens = tratarItens(req.body.itens);
+  const arquivo = arquivoUrl(req);
 
   const result = await db.query(
     `
@@ -158,9 +185,10 @@ export async function editarPagar(req, res) {
       valor = $2,
       vencimento = $3,
       observacao = $4,
-      itens = $5
-    WHERE id = $6
-    AND usuario_id = $7
+      itens = $5,
+      arquivo_url = COALESCE($6, arquivo_url)
+    WHERE id = $7
+    AND usuario_id = $8
     RETURNING *
     `,
     [
@@ -169,6 +197,7 @@ export async function editarPagar(req, res) {
       vencimento || null,
       observacao || null,
       JSON.stringify(itens),
+      arquivo,
       id,
       usuarioId
     ]
