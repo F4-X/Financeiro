@@ -43,41 +43,36 @@ export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
     ]);
   }
 
-async function salvar() {
-  const rota = tipo === "Pagar" ? "/pagar" : "/receber";
+  async function salvar() {
+    const rota = tipo === "Pagar" ? "/pagar" : "/receber";
 
-  const itensFiltrados = itens.filter(item => item.nome || item.valor);
+    const itensFiltrados = itens.filter(item => item.nome || item.valor);
 
-  const somaItens = itensFiltrados.reduce(
-    (total, item) => total + Number(item.valor || 0),
-    0
-  );
+    const somaItens = itensFiltrados.reduce(
+      (total, item) => total + Number(item.valor || 0),
+      0
+    );
 
-  const valorFinal = form.valor
-    ? Number(form.valor)
-    : somaItens;
+    const valorFinal = form.valor
+      ? Number(form.valor)
+      : somaItens;
 
-  const payload = {
-    descricao: form.descricao || form.nome,
-    valor: valorFinal,
-    vencimento: form.data,
-    observacao: form.categoria,
-    itens: itensFiltrados
-  };
+    const payload = {
+      descricao: form.descricao || form.nome || "",
+      valor: Number(valorFinal || 0),
+      vencimento: form.data || null,
+      observacao: form.categoria || "",
+      itens: itensFiltrados
+    };
 
-  if (!payload.descricao || !payload.valor || !payload.vencimento) {
-    alert("Preencha descrição, data e valor.");
-    return;
+    if (dadosEdicao) {
+      await api.put(`${rota}/${dadosEdicao.id}`, payload);
+    } else {
+      await api.post(rota, payload);
+    }
+
+    onClose();
   }
-
-  if (dadosEdicao) {
-    await api.put(`${rota}/${dadosEdicao.id}`, payload);
-  } else {
-    await api.post(rota, payload);
-  }
-
-  onClose();
-}
 
   return (
     <div className="modal-overlay">
