@@ -80,7 +80,7 @@ export async function marcarComoRecebido(req, res) {
 
   const total = Number(item.valor || 0);
   const recebidoAtual = Number(item.valor_recebido || 0);
-  const novoRecebido = recebidoAtual + valorParcial;
+  const novoRecebido = Math.min(recebidoAtual + valorParcial, total);
 
   let novoStatus = "pendente";
 
@@ -89,24 +89,6 @@ export async function marcarComoRecebido(req, res) {
   } else if (novoRecebido > 0) {
     novoStatus = "parcial";
   }
-
-  const result = await db.query(
-    `
-    UPDATE receber
-    SET
-      valor_recebido = $1,
-      status = $2
-    WHERE id = $3
-    AND usuario_id = $4
-    RETURNING *
-    `,
-    [
-      novoRecebido,
-      novoStatus,
-      id,
-      usuarioId
-    ]
-  );
 
   await db.query(
     `
@@ -120,9 +102,37 @@ export async function marcarComoRecebido(req, res) {
     `,
     [
       usuarioId,
-      item.descricao || "Recebimento parcial",
+      item.descricao || "Recebimento",
       valorParcial
     ]
+  );
+
+  if (novoStatus === "recebido") {
+    await db.query(
+      `
+      DELETE FROM receber
+      WHERE id = $1
+      AND usuario_id = $2
+      `,
+      [id, usuarioId]
+    );
+
+    return res.json({
+      message: "Conta recebida e enviada para o histórico."
+    });
+  }
+
+  const result = await db.query(
+    `
+    UPDATE receber
+    SET
+      valor_recebido = $1,
+      status = $2
+    WHERE id = $3
+    AND usuario_id = $4
+    RETURNING *
+    `,
+    [novoRecebido, novoStatus, id, usuarioId]
   );
 
   res.json(result.rows[0]);

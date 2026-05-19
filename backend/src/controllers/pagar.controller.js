@@ -80,7 +80,7 @@ export async function marcarComoPago(req, res) {
 
   const total = Number(item.valor || 0);
   const pagoAtual = Number(item.valor_pago || 0);
-  const novoPago = pagoAtual + valorParcial;
+  const novoPago = Math.min(pagoAtual + valorParcial, total);
 
   let novoStatus = "pendente";
 
@@ -89,24 +89,6 @@ export async function marcarComoPago(req, res) {
   } else if (novoPago > 0) {
     novoStatus = "parcial";
   }
-
-  const result = await db.query(
-    `
-    UPDATE pagar
-    SET
-      valor_pago = $1,
-      status = $2
-    WHERE id = $3
-    AND usuario_id = $4
-    RETURNING *
-    `,
-    [
-      novoPago,
-      novoStatus,
-      id,
-      usuarioId
-    ]
-  );
 
   await db.query(
     `
@@ -120,9 +102,37 @@ export async function marcarComoPago(req, res) {
     `,
     [
       usuarioId,
-      item.descricao || "Pagamento parcial",
+      item.descricao || "Pagamento",
       valorParcial
     ]
+  );
+
+  if (novoStatus === "pago") {
+    await db.query(
+      `
+      DELETE FROM pagar
+      WHERE id = $1
+      AND usuario_id = $2
+      `,
+      [id, usuarioId]
+    );
+
+    return res.json({
+      message: "Conta paga e enviada para o histórico."
+    });
+  }
+
+  const result = await db.query(
+    `
+    UPDATE pagar
+    SET
+      valor_pago = $1,
+      status = $2
+    WHERE id = $3
+    AND usuario_id = $4
+    RETURNING *
+    `,
+    [novoPago, novoStatus, id, usuarioId]
   );
 
   res.json(result.rows[0]);
