@@ -177,15 +177,21 @@ export async function excluirReceber(req, res) {
   const usuarioId = req.usuario.id;
   const { id } = req.params;
 
-  await db.query(
+  const result = await db.query(
     `
     DELETE FROM receber
     WHERE id = $1
     AND usuario_id = $2
-    AND status = 'pendente'
+    RETURNING *
     `,
     [id, usuarioId]
   );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({
+      error: "Conta a receber não encontrada."
+    });
+  }
 
   res.json({
     message: "Conta a receber excluída."
