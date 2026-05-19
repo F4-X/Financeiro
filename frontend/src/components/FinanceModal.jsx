@@ -2,9 +2,11 @@ import { useState } from "react";
 import { api } from "../services/api";
 
 export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
-  const [itens, setItens] = useState([
-    { nome: "", valor: "" }
-  ]);
+  const [itens, setItens] = useState(
+    dadosEdicao?.itens?.length
+      ? dadosEdicao.itens
+      : [{ nome: "", valor: "" }]
+  );
 
   const [form, setForm] = useState({
     data: dadosEdicao?.vencimento
@@ -23,6 +25,17 @@ export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
     });
   }
 
+  function alterarItem(index, campo, valor) {
+    const novosItens = [...itens];
+
+    novosItens[index] = {
+      ...novosItens[index],
+      [campo]: valor
+    };
+
+    setItens(novosItens);
+  }
+
   function adicionarItem() {
     setItens([
       ...itens,
@@ -37,7 +50,8 @@ export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
       descricao: form.descricao || form.nome,
       valor: Number(form.valor),
       vencimento: form.data,
-      observacao: form.categoria
+      observacao: form.categoria,
+      itens: itens.filter(item => item.nome || item.valor)
     };
 
     if (dadosEdicao) {
@@ -133,8 +147,22 @@ export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
 
         {itens.map((item, index) => (
           <div className="item-row" key={index}>
-            <input placeholder="Item" />
-            <input placeholder="Valor" type="number" />
+            <input
+              placeholder="Item"
+              value={item.nome}
+              onChange={e =>
+                alterarItem(index, "nome", e.target.value)
+              }
+            />
+
+            <input
+              placeholder="Valor"
+              type="number"
+              value={item.valor}
+              onChange={e =>
+                alterarItem(index, "valor", e.target.value)
+              }
+            />
           </div>
         ))}
 

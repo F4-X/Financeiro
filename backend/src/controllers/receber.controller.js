@@ -18,7 +18,13 @@ export async function listarReceber(req, res) {
 
 export async function criarReceber(req, res) {
   const usuarioId = req.usuario.id;
-  const { descricao, valor, vencimento, observacao } = req.body;
+  const {
+    descricao,
+    valor,
+    vencimento,
+    observacao,
+    itens = []
+  } = req.body;
 
   if (!descricao || !valor || !vencimento) {
     return res.status(400).json({
@@ -33,9 +39,10 @@ export async function criarReceber(req, res) {
       descricao,
       valor,
       vencimento,
-      observacao
+      observacao,
+      itens
     )
-    VALUES ($1, $2, $3, $4, $5)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *
     `,
     [
@@ -43,7 +50,8 @@ export async function criarReceber(req, res) {
       descricao,
       valor,
       vencimento,
-      observacao || null
+      observacao || null,
+      JSON.stringify(itens)
     ]
   );
 
@@ -118,7 +126,8 @@ export async function editarReceber(req, res) {
     descricao,
     valor,
     vencimento,
-    observacao
+    observacao,
+    itens = []
   } = req.body;
 
   if (!descricao || !valor || !vencimento) {
@@ -134,9 +143,10 @@ export async function editarReceber(req, res) {
       descricao = $1,
       valor = $2,
       vencimento = $3,
-      observacao = $4
-    WHERE id = $5
-    AND usuario_id = $6
+      observacao = $4,
+      itens = $5
+    WHERE id = $6
+    AND usuario_id = $7
     RETURNING *
     `,
     [
@@ -144,6 +154,7 @@ export async function editarReceber(req, res) {
       valor,
       vencimento,
       observacao || null,
+      JSON.stringify(itens),
       id,
       usuarioId
     ]
