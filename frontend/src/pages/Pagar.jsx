@@ -8,6 +8,7 @@ export default function Pagar() {
   const [editando, setEditando] = useState(null);
   const [pagando, setPagando] = useState(null);
   const [valorParcial, setValorParcial] = useState("");
+  const [pesquisa, setPesquisa] = useState("");
 
   async function carregar() {
     const { data } = await api.get("/pagar");
@@ -38,18 +39,6 @@ export default function Pagar() {
     carregar();
   }, []);
 
-  const total = dados.reduce(
-    (soma, item) => soma + Number(item.valor || 0),
-    0
-  );
-
-  const pago = dados.reduce(
-    (soma, item) => soma + Number(item.valor_pago || 0),
-    0
-  );
-
-  const restante = total - pago;
-
   function formatar(valor) {
     return Number(valor || 0).toLocaleString("pt-BR", {
       style: "currency",
@@ -59,7 +48,6 @@ export default function Pagar() {
 
   function formatarData(data) {
     if (!data) return "-";
-
     return new Date(data).toLocaleDateString("pt-BR");
   }
 
@@ -74,6 +62,36 @@ export default function Pagar() {
   function restanteItem(item) {
     return Math.max(valorTotalItem(item) - valorPagoItem(item), 0);
   }
+
+  const dadosFiltrados = dados.filter(item => {
+    const texto = pesquisa.toLowerCase();
+
+    const descricao = String(item.descricao || "").toLowerCase();
+    const observacao = String(item.observacao || "").toLowerCase();
+    const valor = String(item.valor || "").toLowerCase();
+    const valorFormatado = formatar(item.valor).toLowerCase();
+    const data = item.vencimento ? formatarData(item.vencimento) : "";
+
+    return (
+      descricao.includes(texto) ||
+      observacao.includes(texto) ||
+      valor.includes(texto) ||
+      valorFormatado.includes(texto) ||
+      data.includes(texto)
+    );
+  });
+
+  const total = dadosFiltrados.reduce(
+    (soma, item) => soma + Number(item.valor || 0),
+    0
+  );
+
+  const pago = dadosFiltrados.reduce(
+    (soma, item) => soma + Number(item.valor_pago || 0),
+    0
+  );
+
+  const restante = total - pago;
 
   return (
     <div>
@@ -111,6 +129,16 @@ export default function Pagar() {
         </div>
       </div>
 
+      <div className="panel">
+        <label>Pesquisar</label>
+        <input
+          type="text"
+          placeholder="Pesquisar por fornecedor, data ou valor..."
+          value={pesquisa}
+          onChange={e => setPesquisa(e.target.value)}
+        />
+      </div>
+
       <div className="table-box">
         <table>
           <thead>
@@ -125,10 +153,9 @@ export default function Pagar() {
           </thead>
 
           <tbody>
-            {dados.map(item => (
+            {dadosFiltrados.map(item => (
               <tr key={item.id}>
                 <td>{item.descricao || "-"}</td>
-
                 <td>{formatar(item.valor)}</td>
 
                 <td>
@@ -142,7 +169,6 @@ export default function Pagar() {
                 </td>
 
                 <td>{formatarData(item.vencimento)}</td>
-
                 <td>{item.status}</td>
 
                 <td>
@@ -158,19 +184,19 @@ export default function Pagar() {
                     </button>
 
                     <button
-  className="danger-btn"
-  onClick={() => {
-    const confirmar = window.confirm(
-      "Tem certeza que deseja excluir esta conta?"
-    );
+                      className="danger-btn"
+                      onClick={() => {
+                        const confirmar = window.confirm(
+                          "Tem certeza que deseja excluir esta conta?"
+                        );
 
-    if (confirmar) {
-      excluir(item.id);
-    }
-  }}
->
-  Excluir
-</button>
+                        if (confirmar) {
+                          excluir(item.id);
+                        }
+                      }}
+                    >
+                      Excluir
+                    </button>
                   </div>
                 </td>
               </tr>

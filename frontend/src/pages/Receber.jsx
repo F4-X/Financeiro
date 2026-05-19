@@ -8,6 +8,7 @@ export default function Receber() {
   const [editando, setEditando] = useState(null);
   const [recebendo, setRecebendo] = useState(null);
   const [valorParcial, setValorParcial] = useState("");
+  const [pesquisa, setPesquisa] = useState("");
 
   async function carregar() {
     const { data } = await api.get("/receber");
@@ -38,18 +39,6 @@ export default function Receber() {
     carregar();
   }, []);
 
-  const total = dados.reduce(
-    (soma, item) => soma + Number(item.valor || 0),
-    0
-  );
-
-  const recebido = dados.reduce(
-    (soma, item) => soma + Number(item.valor_recebido || 0),
-    0
-  );
-
-  const restante = total - recebido;
-
   function formatar(valor) {
     return Number(valor || 0).toLocaleString("pt-BR", {
       style: "currency",
@@ -74,6 +63,38 @@ export default function Receber() {
   function restanteItem(item) {
     return Math.max(valorTotalItem(item) - valorRecebidoItem(item), 0);
   }
+
+  const dadosFiltrados = dados.filter(item => {
+    const texto = pesquisa.toLowerCase();
+
+    const descricao = String(item.descricao || "").toLowerCase();
+    const observacao = String(item.observacao || "").toLowerCase();
+    const valor = String(item.valor || "").toLowerCase();
+    const valorFormatado = formatar(item.valor).toLowerCase();
+    const data = item.vencimento
+      ? formatarData(item.vencimento)
+      : "";
+
+    return (
+      descricao.includes(texto) ||
+      observacao.includes(texto) ||
+      valor.includes(texto) ||
+      valorFormatado.includes(texto) ||
+      data.includes(texto)
+    );
+  });
+
+  const total = dadosFiltrados.reduce(
+    (soma, item) => soma + Number(item.valor || 0),
+    0
+  );
+
+  const recebido = dadosFiltrados.reduce(
+    (soma, item) => soma + Number(item.valor_recebido || 0),
+    0
+  );
+
+  const restante = total - recebido;
 
   return (
     <div>
@@ -111,6 +132,17 @@ export default function Receber() {
         </div>
       </div>
 
+      <div className="panel">
+        <label>Pesquisar</label>
+
+        <input
+          type="text"
+          placeholder="Pesquisar por cliente, data ou valor..."
+          value={pesquisa}
+          onChange={e => setPesquisa(e.target.value)}
+        />
+      </div>
+
       <div className="table-box">
         <table>
           <thead>
@@ -125,7 +157,7 @@ export default function Receber() {
           </thead>
 
           <tbody>
-            {dados.map(item => (
+            {dadosFiltrados.map(item => (
               <tr key={item.id}>
                 <td>{item.descricao || "-"}</td>
 
@@ -135,7 +167,9 @@ export default function Receber() {
                   <strong>
                     {formatar(valorRecebidoItem(item))} / {formatar(valorTotalItem(item))}
                   </strong>
+
                   <br />
+
                   <small>
                     Restante: {formatar(restanteItem(item))}
                   </small>
@@ -158,19 +192,19 @@ export default function Receber() {
                     </button>
 
                     <button
-  className="danger-btn"
-  onClick={() => {
-    const confirmar = window.confirm(
-      "Tem certeza que deseja excluir esta conta?"
-    );
+                      className="danger-btn"
+                      onClick={() => {
+                        const confirmar = window.confirm(
+                          "Tem certeza que deseja excluir esta conta?"
+                        );
 
-    if (confirmar) {
-      excluir(item.id);
-    }
-  }}
->
-  Excluir
-</button>
+                        if (confirmar) {
+                          excluir(item.id);
+                        }
+                      }}
+                    >
+                      Excluir
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -187,13 +221,18 @@ export default function Receber() {
             </div>
 
             <p className="subtitle">
-              Total: {formatar(recebendo.valor)} <br />
-              Recebido: {formatar(recebendo.valor_recebido)} <br />
+              Total: {formatar(recebendo.valor)}
+              <br />
+
+              Recebido: {formatar(recebendo.valor_recebido)}
+              <br />
+
               Restante: {formatar(restanteItem(recebendo))}
             </p>
 
             <div className="form-group">
               <label>Valor recebido agora</label>
+
               <input
                 type="number"
                 placeholder="0.00"
