@@ -26,12 +26,6 @@ export async function criarReceber(req, res) {
     itens = []
   } = req.body;
 
-  if (!descricao || !valor || !vencimento) {
-    return res.status(400).json({
-      error: "Descrição, valor e vencimento são obrigatórios."
-    });
-  }
-
   const result = await db.query(
     `
     INSERT INTO receber (
