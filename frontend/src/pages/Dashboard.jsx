@@ -26,8 +26,27 @@ export default function Dashboard() {
 
   function dataBR(data) {
     if (!data) return "";
-
     return new Date(data).toLocaleDateString("pt-BR");
+  }
+
+  function restantePagar(item) {
+    return Math.max(
+      Number(item.valor || 0) - Number(item.valor_pago || 0),
+      0
+    );
+  }
+
+  function restanteReceber(item) {
+    return Math.max(
+      Number(item.valor || 0) - Number(item.valor_recebido || 0),
+      0
+    );
+  }
+
+  function valorRestante(item) {
+    return item.tipo === "Pagar"
+      ? restantePagar(item)
+      : restanteReceber(item);
   }
 
   const hoje = new Date().toLocaleDateString("pt-BR");
@@ -52,22 +71,22 @@ export default function Dashboard() {
   ];
 
   const totalPagar = pagar.reduce(
-    (soma, item) => soma + Number(item.valor || 0),
+    (soma, item) => soma + restantePagar(item),
     0
   );
 
   const totalReceber = receber.reduce(
-    (soma, item) => soma + Number(item.valor || 0),
+    (soma, item) => soma + restanteReceber(item),
     0
   );
 
   const totalDiaPagar = pagarHoje.reduce(
-    (soma, item) => soma + Number(item.valor || 0),
+    (soma, item) => soma + restantePagar(item),
     0
   );
 
   const totalDiaReceber = receberHoje.reduce(
-    (soma, item) => soma + Number(item.valor || 0),
+    (soma, item) => soma + restanteReceber(item),
     0
   );
 
@@ -86,14 +105,14 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <span>Total a pagar</span>
+          <span>Total a pagar restante</span>
           <strong style={{ color: "#d62828" }}>
             {formatar(totalPagar)}
           </strong>
         </div>
 
         <div className="card">
-          <span>Total a receber</span>
+          <span>Total a receber restante</span>
           <strong style={{ color: "#00bd5e" }}>
             {formatar(totalReceber)}
           </strong>
@@ -102,14 +121,14 @@ export default function Dashboard() {
 
       <div className="cards">
         <div className="card">
-          <span>Pagar hoje</span>
+          <span>Pagar hoje restante</span>
           <strong style={{ color: "#d62828" }}>
             {formatar(totalDiaPagar)}
           </strong>
         </div>
 
         <div className="card">
-          <span>Receber hoje</span>
+          <span>Receber hoje restante</span>
           <strong style={{ color: "#00bd5e" }}>
             {formatar(totalDiaReceber)}
           </strong>
@@ -131,7 +150,8 @@ export default function Dashboard() {
             <tr>
               <th>DESCRIÇÃO</th>
               <th>TIPO</th>
-              <th>VALOR</th>
+              <th>VALOR TOTAL</th>
+              <th>RESTANTE</th>
               <th>VENCIMENTO</th>
               <th>STATUS</th>
             </tr>
@@ -140,7 +160,7 @@ export default function Dashboard() {
           <tbody>
             {contasHoje.length === 0 && (
               <tr>
-                <td colSpan="5">
+                <td colSpan="6">
                   Nenhuma conta para hoje.
                 </td>
               </tr>
@@ -149,13 +169,10 @@ export default function Dashboard() {
             {contasHoje.map(item => (
               <tr key={`${item.tipo}-${item.id}`}>
                 <td>{item.descricao || "-"}</td>
-
                 <td>{item.tipo}</td>
-
                 <td>{formatar(item.valor)}</td>
-
+                <td>{formatar(valorRestante(item))}</td>
                 <td>{dataBR(item.vencimento)}</td>
-
                 <td>{item.status}</td>
               </tr>
             ))}
