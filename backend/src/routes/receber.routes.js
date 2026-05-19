@@ -1,4 +1,5 @@
 import { Router } from "express";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { db } from "../database/db.js";
 
@@ -20,7 +21,18 @@ router.post("/login", async (req, res) => {
 
   const usuario = result.rows[0];
 
-  if (!usuario || usuario.senha !== senha) {
+  if (!usuario) {
+    return res.status(401).json({
+      error: "Email ou senha inválidos"
+    });
+  }
+
+  const senhaCorreta = await bcrypt.compare(
+    senha,
+    usuario.senha
+  );
+
+  if (!senhaCorreta) {
     return res.status(401).json({
       error: "Email ou senha inválidos"
     });
@@ -34,7 +46,9 @@ router.post("/login", async (req, res) => {
       perfil: usuario.perfil
     },
     JWT_SECRET,
-    { expiresIn: "7d" }
+    {
+      expiresIn: "7d"
+    }
   );
 
   res.json({
