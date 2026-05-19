@@ -138,7 +138,7 @@ export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
           </div>
         ))}
 
-        <button className="add-item-btn" onClick={adicionarItem}>a
+        <button className="add-item-btn" onClick={adicionarItem}>
           + adicionar item
         </button>
 
