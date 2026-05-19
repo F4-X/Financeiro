@@ -25,13 +25,9 @@ export default function App() {
 
   return (
     <div className="app">
-
       <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
-
         <div className="sidebar-top">
-
           <div className="logo">
-
             <div className="logo-icon">
               F
             </div>
@@ -45,7 +41,6 @@ export default function App() {
                   : "Usuário comum"}
               </small>
             </div>
-
           </div>
 
           <button
@@ -54,11 +49,9 @@ export default function App() {
           >
             ☰
           </button>
-
         </div>
 
         <nav className="menu">
-
           <NavLink
             to="/"
             onClick={() => setMenuOpen(false)}
@@ -81,10 +74,17 @@ export default function App() {
           </NavLink>
 
           <NavLink
-            to="/historico"
+            to="/historico-pagar"
             onClick={() => setMenuOpen(false)}
           >
-            Histórico
+            Histórico Pagar
+          </NavLink>
+
+          <NavLink
+            to="/historico-receber"
+            onClick={() => setMenuOpen(false)}
+          >
+            Histórico Receber
           </NavLink>
 
           {usuario?.perfil === "admin" && (
@@ -95,7 +95,6 @@ export default function App() {
               Contas
             </NavLink>
           )}
-
         </nav>
 
         <button
@@ -104,13 +103,11 @@ export default function App() {
         >
           Sair
         </button>
-
       </aside>
 
       <main className="content">
         <Outlet />
       </main>
-
     </div>
   );
 }
