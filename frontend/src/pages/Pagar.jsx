@@ -224,7 +224,7 @@ export default function Pagar() {
       target="_blank"
       rel="noreferrer"
     >
-      📎 Ver
+     Ver
     </a>
   ) : (
     "-"
