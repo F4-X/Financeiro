@@ -1,4 +1,76 @@
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
+
 export default function Dashboard() {
+  const [pagar, setPagar] = useState([]);
+  const [receber, setReceber] = useState([]);
+
+  async function carregar() {
+    const pagarResponse = await api.get("/pagar");
+    const receberResponse = await api.get("/receber");
+
+    setPagar(pagarResponse.data);
+    setReceber(receberResponse.data);
+  }
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  function formatar(valor) {
+    return Number(valor || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+  }
+
+  function dataBR(data) {
+    if (!data) return "";
+
+    return new Date(data).toLocaleDateString("pt-BR");
+  }
+
+  const hoje = new Date().toLocaleDateString("pt-BR");
+
+  const pagarHoje = pagar.filter(item =>
+    dataBR(item.vencimento) === hoje
+  );
+
+  const receberHoje = receber.filter(item =>
+    dataBR(item.vencimento) === hoje
+  );
+
+  const contasHoje = [
+    ...pagarHoje.map(item => ({
+      ...item,
+      tipo: "Pagar"
+    })),
+    ...receberHoje.map(item => ({
+      ...item,
+      tipo: "Receber"
+    }))
+  ];
+
+  const totalPagar = pagar.reduce(
+    (soma, item) => soma + Number(item.valor || 0),
+    0
+  );
+
+  const totalReceber = receber.reduce(
+    (soma, item) => soma + Number(item.valor || 0),
+    0
+  );
+
+  const totalDiaPagar = pagarHoje.reduce(
+    (soma, item) => soma + Number(item.valor || 0),
+    0
+  );
+
+  const totalDiaReceber = receberHoje.reduce(
+    (soma, item) => soma + Number(item.valor || 0),
+    0
+  );
+
   return (
     <div>
       <h1 className="page-title">Resumo financeiro</h1>
@@ -9,24 +81,49 @@ export default function Dashboard() {
 
       <div className="cards">
         <div className="card">
-          <span>Saldo total</span>
-          <strong>R$ 29.167,00</strong>
+          <span>Contas do dia</span>
+          <strong>{contasHoje.length}</strong>
         </div>
 
         <div className="card">
           <span>Total a pagar</span>
           <strong style={{ color: "#d62828" }}>
-            R$ 8.400,00
+            {formatar(totalPagar)}
           </strong>
         </div>
 
         <div className="card">
           <span>Total a receber</span>
           <strong style={{ color: "#00bd5e" }}>
-            R$ 20.767,00
+            {formatar(totalReceber)}
           </strong>
         </div>
       </div>
+
+      <div className="cards">
+        <div className="card">
+          <span>Pagar hoje</span>
+          <strong style={{ color: "#d62828" }}>
+            {formatar(totalDiaPagar)}
+          </strong>
+        </div>
+
+        <div className="card">
+          <span>Receber hoje</span>
+          <strong style={{ color: "#00bd5e" }}>
+            {formatar(totalDiaReceber)}
+          </strong>
+        </div>
+
+        <div className="card">
+          <span>Resultado do dia</span>
+          <strong>
+            {formatar(totalDiaReceber - totalDiaPagar)}
+          </strong>
+        </div>
+      </div>
+
+      <h2 className="items-title">Contas de hoje</h2>
 
       <div className="table-box">
         <table>
@@ -35,28 +132,33 @@ export default function Dashboard() {
               <th>DESCRIÇÃO</th>
               <th>TIPO</th>
               <th>VALOR</th>
+              <th>VENCIMENTO</th>
               <th>STATUS</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr>
-              <td>Salário</td>
-              <td>Receber</td>
-              <td>R$ 5.000,00</td>
-              <td style={{ color: "#00bd5e", fontWeight: "bold" }}>
-                Recebido
-              </td>
-            </tr>
+            {contasHoje.length === 0 && (
+              <tr>
+                <td colSpan="5">
+                  Nenhuma conta para hoje.
+                </td>
+              </tr>
+            )}
 
-            <tr>
-              <td>Aluguel</td>
-              <td>Pagar</td>
-              <td>R$ 1.500,00</td>
-              <td style={{ color: "#d62828", fontWeight: "bold" }}>
-                Pendente
-              </td>
-            </tr>
+            {contasHoje.map(item => (
+              <tr key={`${item.tipo}-${item.id}`}>
+                <td>{item.descricao || "-"}</td>
+
+                <td>{item.tipo}</td>
+
+                <td>{formatar(item.valor)}</td>
+
+                <td>{dataBR(item.vencimento)}</td>
+
+                <td>{item.status}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
