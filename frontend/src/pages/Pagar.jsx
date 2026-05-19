@@ -6,6 +6,8 @@ export default function Pagar() {
   const [open, setOpen] = useState(false);
   const [dados, setDados] = useState([]);
   const [editando, setEditando] = useState(null);
+  const [pagando, setPagando] = useState(null);
+  const [valorParcial, setValorParcial] = useState("");
 
   async function carregar() {
     const { data } = await api.get("/pagar");
@@ -17,8 +19,13 @@ export default function Pagar() {
     carregar();
   }
 
-  async function marcarPago(id) {
-    await api.patch(`/pagar/${id}/pagar`);
+  async function confirmarPagamento() {
+    await api.patch(`/pagar/${pagando.id}/pagar`, {
+      valor: Number(valorParcial || 0)
+    });
+
+    setPagando(null);
+    setValorParcial("");
     carregar();
   }
 
@@ -31,19 +38,41 @@ export default function Pagar() {
     carregar();
   }, []);
 
-  const total = dados.reduce((soma, item) => soma + Number(item.valor), 0);
+  const total = dados.reduce(
+    (soma, item) => soma + Number(item.valor || 0),
+    0
+  );
 
-  const pago = dados
-    .filter(item => item.status === "pago")
-    .reduce((soma, item) => soma + Number(item.valor), 0);
+  const pago = dados.reduce(
+    (soma, item) => soma + Number(item.valor_pago || 0),
+    0
+  );
 
   const restante = total - pago;
 
   function formatar(valor) {
-    return Number(valor).toLocaleString("pt-BR", {
+    return Number(valor || 0).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL"
     });
+  }
+
+  function formatarData(data) {
+    if (!data) return "-";
+
+    return new Date(data).toLocaleDateString("pt-BR");
+  }
+
+  function valorPagoItem(item) {
+    return Number(item.valor_pago || 0);
+  }
+
+  function valorTotalItem(item) {
+    return Number(item.valor || 0);
+  }
+
+  function restanteItem(item) {
+    return Math.max(valorTotalItem(item) - valorPagoItem(item), 0);
   }
 
   return (
@@ -88,6 +117,7 @@ export default function Pagar() {
             <tr>
               <th>DESCRIÇÃO</th>
               <th>VALOR</th>
+              <th>PROGRESSO</th>
               <th>VENCIMENTO</th>
               <th>STATUS</th>
               <th>AÇÕES</th>
@@ -97,15 +127,28 @@ export default function Pagar() {
           <tbody>
             {dados.map(item => (
               <tr key={item.id}>
-                <td>{item.descricao}</td>
+                <td>{item.descricao || "-"}</td>
+
                 <td>{formatar(item.valor)}</td>
-                <td>{new Date(item.vencimento).toLocaleDateString("pt-BR")}</td>
+
+                <td>
+                  <strong>
+                    {formatar(valorPagoItem(item))} / {formatar(valorTotalItem(item))}
+                  </strong>
+                  <br />
+                  <small>
+                    Restante: {formatar(restanteItem(item))}
+                  </small>
+                </td>
+
+                <td>{formatarData(item.vencimento)}</td>
+
                 <td>{item.status}</td>
 
                 <td>
                   <div className="actions">
-                    {item.status === "pendente" && (
-                      <button onClick={() => marcarPago(item.id)}>
+                    {item.status !== "pago" && (
+                      <button onClick={() => setPagando(item)}>
                         Pagar
                       </button>
                     )}
@@ -127,6 +170,48 @@ export default function Pagar() {
           </tbody>
         </table>
       </div>
+
+      {pagando && (
+        <div className="modal-overlay">
+          <div className="finance-modal">
+            <div className="modal-header">
+              <h2>Registrar pagamento</h2>
+            </div>
+
+            <p className="subtitle">
+              Total: {formatar(pagando.valor)} <br />
+              Pago: {formatar(pagando.valor_pago)} <br />
+              Restante: {formatar(restanteItem(pagando))}
+            </p>
+
+            <div className="form-group">
+              <label>Valor pago agora</label>
+              <input
+                type="number"
+                placeholder="0.00"
+                value={valorParcial}
+                onChange={e => setValorParcial(e.target.value)}
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="secondary"
+                onClick={() => {
+                  setPagando(null);
+                  setValorParcial("");
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button onClick={confirmarPagamento}>
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {open && (
         <FinanceModal

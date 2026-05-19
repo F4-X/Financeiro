@@ -34,16 +34,17 @@ export async function criarReceber(req, res) {
       valor,
       vencimento,
       observacao,
-      itens
+      itens,
+      valor_recebido
     )
-    VALUES ($1, $2, $3, $4, $5, $6)
+    VALUES ($1, $2, $3, $4, $5, $6, 0)
     RETURNING *
     `,
     [
       usuarioId,
-      descricao,
-      valor,
-      vencimento,
+      descricao || "",
+      Number(valor || 0),
+      vencimento || null,
       observacao || null,
       JSON.stringify(itens)
     ]
@@ -55,6 +56,9 @@ export async function criarReceber(req, res) {
 export async function marcarComoRecebido(req, res) {
   const usuarioId = req.usuario.id;
   const { id } = req.params;
+  const { valor } = req.body;
+
+  const valorParcial = Number(valor || 0);
 
   const busca = await db.query(
     `
@@ -74,20 +78,34 @@ export async function marcarComoRecebido(req, res) {
     });
   }
 
-  if (item.status === "recebido") {
-    return res.status(400).json({
-      error: "Este valor já foi recebido."
-    });
+  const total = Number(item.valor || 0);
+  const recebidoAtual = Number(item.valor_recebido || 0);
+  const novoRecebido = recebidoAtual + valorParcial;
+
+  let novoStatus = "pendente";
+
+  if (novoRecebido >= total && total > 0) {
+    novoStatus = "recebido";
+  } else if (novoRecebido > 0) {
+    novoStatus = "parcial";
   }
 
-  await db.query(
+  const result = await db.query(
     `
     UPDATE receber
-    SET status = 'recebido'
-    WHERE id = $1
-    AND usuario_id = $2
+    SET
+      valor_recebido = $1,
+      status = $2
+    WHERE id = $3
+    AND usuario_id = $4
+    RETURNING *
     `,
-    [id, usuarioId]
+    [
+      novoRecebido,
+      novoStatus,
+      id,
+      usuarioId
+    ]
   );
 
   await db.query(
@@ -102,14 +120,12 @@ export async function marcarComoRecebido(req, res) {
     `,
     [
       usuarioId,
-      item.descricao,
-      item.valor
+      item.descricao || "Recebimento parcial",
+      valorParcial
     ]
   );
 
-  res.json({
-    message: "Valor marcado como recebido."
-  });
+  res.json(result.rows[0]);
 }
 
 export async function editarReceber(req, res) {
@@ -123,12 +139,6 @@ export async function editarReceber(req, res) {
     observacao,
     itens = []
   } = req.body;
-
-  if (!descricao || !valor || !vencimento) {
-    return res.status(400).json({
-      error: "Descrição, valor e vencimento são obrigatórios."
-    });
-  }
 
   const result = await db.query(
     `
@@ -144,9 +154,9 @@ export async function editarReceber(req, res) {
     RETURNING *
     `,
     [
-      descricao,
-      valor,
-      vencimento,
+      descricao || "",
+      Number(valor || 0),
+      vencimento || null,
       observacao || null,
       JSON.stringify(itens),
       id,

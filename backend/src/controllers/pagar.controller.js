@@ -34,16 +34,17 @@ export async function criarPagar(req, res) {
       valor,
       vencimento,
       observacao,
-      itens
+      itens,
+      valor_pago
     )
-    VALUES ($1, $2, $3, $4, $5, $6)
+    VALUES ($1, $2, $3, $4, $5, $6, 0)
     RETURNING *
     `,
     [
       usuarioId,
-      descricao,
-      valor,
-      vencimento,
+      descricao || "",
+      Number(valor || 0),
+      vencimento || null,
       observacao || null,
       JSON.stringify(itens)
     ]
@@ -55,6 +56,9 @@ export async function criarPagar(req, res) {
 export async function marcarComoPago(req, res) {
   const usuarioId = req.usuario.id;
   const { id } = req.params;
+  const { valor } = req.body;
+
+  const valorParcial = Number(valor || 0);
 
   const busca = await db.query(
     `
@@ -74,20 +78,34 @@ export async function marcarComoPago(req, res) {
     });
   }
 
-  if (item.status === "pago") {
-    return res.status(400).json({
-      error: "Esta conta já foi paga."
-    });
+  const total = Number(item.valor || 0);
+  const pagoAtual = Number(item.valor_pago || 0);
+  const novoPago = pagoAtual + valorParcial;
+
+  let novoStatus = "pendente";
+
+  if (novoPago >= total && total > 0) {
+    novoStatus = "pago";
+  } else if (novoPago > 0) {
+    novoStatus = "parcial";
   }
 
-  await db.query(
+  const result = await db.query(
     `
     UPDATE pagar
-    SET status = 'pago'
-    WHERE id = $1
-    AND usuario_id = $2
+    SET
+      valor_pago = $1,
+      status = $2
+    WHERE id = $3
+    AND usuario_id = $4
+    RETURNING *
     `,
-    [id, usuarioId]
+    [
+      novoPago,
+      novoStatus,
+      id,
+      usuarioId
+    ]
   );
 
   await db.query(
@@ -102,14 +120,12 @@ export async function marcarComoPago(req, res) {
     `,
     [
       usuarioId,
-      item.descricao,
-      item.valor
+      item.descricao || "Pagamento parcial",
+      valorParcial
     ]
   );
 
-  res.json({
-    message: "Conta marcada como paga."
-  });
+  res.json(result.rows[0]);
 }
 
 export async function editarPagar(req, res) {
@@ -123,12 +139,6 @@ export async function editarPagar(req, res) {
     observacao,
     itens = []
   } = req.body;
-
-  if (!descricao || !valor || !vencimento) {
-    return res.status(400).json({
-      error: "Descrição, valor e vencimento são obrigatórios."
-    });
-  }
 
   const result = await db.query(
     `
@@ -144,9 +154,9 @@ export async function editarPagar(req, res) {
     RETURNING *
     `,
     [
-      descricao,
-      valor,
-      vencimento,
+      descricao || "",
+      Number(valor || 0),
+      vencimento || null,
       observacao || null,
       JSON.stringify(itens),
       id,

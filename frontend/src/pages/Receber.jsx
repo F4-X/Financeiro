@@ -6,6 +6,8 @@ export default function Receber() {
   const [open, setOpen] = useState(false);
   const [dados, setDados] = useState([]);
   const [editando, setEditando] = useState(null);
+  const [recebendo, setRecebendo] = useState(null);
+  const [valorParcial, setValorParcial] = useState("");
 
   async function carregar() {
     const { data } = await api.get("/receber");
@@ -17,8 +19,13 @@ export default function Receber() {
     carregar();
   }
 
-  async function marcarRecebido(id) {
-    await api.patch(`/receber/${id}/receber`);
+  async function confirmarRecebimento() {
+    await api.patch(`/receber/${recebendo.id}/receber`, {
+      valor: Number(valorParcial || 0)
+    });
+
+    setRecebendo(null);
+    setValorParcial("");
     carregar();
   }
 
@@ -31,19 +38,41 @@ export default function Receber() {
     carregar();
   }, []);
 
-  const total = dados.reduce((soma, item) => soma + Number(item.valor), 0);
+  const total = dados.reduce(
+    (soma, item) => soma + Number(item.valor || 0),
+    0
+  );
 
-  const recebido = dados
-    .filter(item => item.status === "recebido")
-    .reduce((soma, item) => soma + Number(item.valor), 0);
+  const recebido = dados.reduce(
+    (soma, item) => soma + Number(item.valor_recebido || 0),
+    0
+  );
 
   const restante = total - recebido;
 
   function formatar(valor) {
-    return Number(valor).toLocaleString("pt-BR", {
+    return Number(valor || 0).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL"
     });
+  }
+
+  function formatarData(data) {
+    if (!data) return "-";
+
+    return new Date(data).toLocaleDateString("pt-BR");
+  }
+
+  function valorRecebidoItem(item) {
+    return Number(item.valor_recebido || 0);
+  }
+
+  function valorTotalItem(item) {
+    return Number(item.valor || 0);
+  }
+
+  function restanteItem(item) {
+    return Math.max(valorTotalItem(item) - valorRecebidoItem(item), 0);
   }
 
   return (
@@ -51,7 +80,7 @@ export default function Receber() {
       <h1 className="page-title">Contas a receber</h1>
 
       <p className="subtitle">
-        Listagem financeira com pagamentos parciais.
+        Listagem financeira com recebimentos parciais.
       </p>
 
       <div className="top-actions">
@@ -88,6 +117,7 @@ export default function Receber() {
             <tr>
               <th>DESCRIÇÃO</th>
               <th>VALOR</th>
+              <th>PROGRESSO</th>
               <th>VENCIMENTO</th>
               <th>STATUS</th>
               <th>AÇÕES</th>
@@ -97,15 +127,28 @@ export default function Receber() {
           <tbody>
             {dados.map(item => (
               <tr key={item.id}>
-                <td>{item.descricao}</td>
+                <td>{item.descricao || "-"}</td>
+
                 <td>{formatar(item.valor)}</td>
-                <td>{new Date(item.vencimento).toLocaleDateString("pt-BR")}</td>
+
+                <td>
+                  <strong>
+                    {formatar(valorRecebidoItem(item))} / {formatar(valorTotalItem(item))}
+                  </strong>
+                  <br />
+                  <small>
+                    Restante: {formatar(restanteItem(item))}
+                  </small>
+                </td>
+
+                <td>{formatarData(item.vencimento)}</td>
+
                 <td>{item.status}</td>
 
                 <td>
                   <div className="actions">
-                    {item.status === "pendente" && (
-                      <button onClick={() => marcarRecebido(item.id)}>
+                    {item.status !== "recebido" && (
+                      <button onClick={() => setRecebendo(item)}>
                         Receber
                       </button>
                     )}
@@ -127,6 +170,48 @@ export default function Receber() {
           </tbody>
         </table>
       </div>
+
+      {recebendo && (
+        <div className="modal-overlay">
+          <div className="finance-modal">
+            <div className="modal-header">
+              <h2>Registrar recebimento</h2>
+            </div>
+
+            <p className="subtitle">
+              Total: {formatar(recebendo.valor)} <br />
+              Recebido: {formatar(recebendo.valor_recebido)} <br />
+              Restante: {formatar(restanteItem(recebendo))}
+            </p>
+
+            <div className="form-group">
+              <label>Valor recebido agora</label>
+              <input
+                type="number"
+                placeholder="0.00"
+                value={valorParcial}
+                onChange={e => setValorParcial(e.target.value)}
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="secondary"
+                onClick={() => {
+                  setRecebendo(null);
+                  setValorParcial("");
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button onClick={confirmarRecebimento}>
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {open && (
         <FinanceModal
