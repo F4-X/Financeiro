@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { api } from "../services/api";
 
-export default function FinanceModal({ tipo, onClose }) {
-
+export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
   const [itens, setItens] = useState([
     { nome: "", valor: "" }
   ]);
 
   const [form, setForm] = useState({
-    data: "",
-    nome: "",
-    descricao: "",
-    categoria: "",
-    valor: ""
+    data: dadosEdicao?.vencimento
+      ? dadosEdicao.vencimento.split("T")[0]
+      : "",
+    nome: dadosEdicao?.descricao || "",
+    descricao: dadosEdicao?.descricao || "",
+    categoria: dadosEdicao?.observacao || "",
+    valor: dadosEdicao?.valor || ""
   });
 
   function alterarCampo(e) {
@@ -30,43 +31,36 @@ export default function FinanceModal({ tipo, onClose }) {
   }
 
   async function salvar() {
+    const rota = tipo === "Pagar" ? "/pagar" : "/receber";
 
-    const rota =
-      tipo === "Pagar"
-        ? "/pagar"
-        : "/receber";
-
-    await api.post(rota, {
-      descricao:
-        form.descricao || form.nome,
-
+    const payload = {
+      descricao: form.descricao || form.nome,
       valor: Number(form.valor),
-
       vencimento: form.data,
+      observacao: form.categoria
+    };
 
-      observacao:
-        form.categoria
-    });
+    if (dadosEdicao) {
+      await api.put(`${rota}/${dadosEdicao.id}`, payload);
+    } else {
+      await api.post(rota, payload);
+    }
 
     onClose();
   }
 
   return (
     <div className="modal-overlay">
-
       <div className="finance-modal">
-
         <div className="modal-header">
           <h2>
-            Novo {tipo.toLowerCase()}
+            {dadosEdicao ? "Editar" : "Novo"} {tipo.toLowerCase()}
           </h2>
         </div>
 
         <div className="grid-2">
-
           <div>
             <label>Tipo</label>
-
             <select disabled>
               <option>{tipo}</option>
             </select>
@@ -74,7 +68,6 @@ export default function FinanceModal({ tipo, onClose }) {
 
           <div>
             <label>Data</label>
-
             <input
               type="date"
               name="data"
@@ -82,56 +75,41 @@ export default function FinanceModal({ tipo, onClose }) {
               onChange={alterarCampo}
             />
           </div>
-
         </div>
 
         <div className="form-group">
-
-          <label>
-            Cliente/Fornecedor
-          </label>
-
+          <label>Cliente/Fornecedor</label>
           <input
             type="text"
             name="nome"
             value={form.nome}
             onChange={alterarCampo}
           />
-
         </div>
 
         <div className="form-group">
-
           <label>Descrição</label>
-
           <textarea
             rows="4"
             name="descricao"
             value={form.descricao}
             onChange={alterarCampo}
           />
-
         </div>
 
         <div className="grid-2">
-
           <div>
-
             <label>Categoria</label>
-
             <input
               type="text"
               name="categoria"
               value={form.categoria}
               onChange={alterarCampo}
             />
-
           </div>
 
           <div>
-
             <label>Valor total</label>
-
             <input
               type="number"
               name="valor"
@@ -139,19 +117,13 @@ export default function FinanceModal({ tipo, onClose }) {
               value={form.valor}
               onChange={alterarCampo}
             />
-
           </div>
-
         </div>
 
         {tipo === "Pagar" && (
           <label className="upload-box">
             📎 Anexar imagem ou PDF da conta
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              hidden
-            />
+            <input type="file" accept="image/*,.pdf" hidden />
           </label>
         )}
 
@@ -160,47 +132,26 @@ export default function FinanceModal({ tipo, onClose }) {
         </div>
 
         {itens.map((item, index) => (
-
-          <div
-            className="item-row"
-            key={index}
-          >
-
+          <div className="item-row" key={index}>
             <input placeholder="Item" />
-
-            <input
-              placeholder="Valor"
-              type="number"
-            />
-
+            <input placeholder="Valor" type="number" />
           </div>
-
         ))}
 
-        <button
-          className="add-item-btn"
-          onClick={adicionarItem}
-        >
+        <button className="add-item-btn" onClick={adicionarItem}>
           + adicionar item
         </button>
 
         <div className="modal-actions">
-
-          <button
-            className="secondary"
-            onClick={onClose}
-          >
+          <button className="secondary" onClick={onClose}>
             Cancelar
           </button>
 
           <button onClick={salvar}>
-            Salvar
+            {dadosEdicao ? "Salvar edição" : "Salvar"}
           </button>
-
         </div>
-
       </div>
-
     </div>
   );
 }
