@@ -1,8 +1,11 @@
-import fs from "fs";
-import { PGlite } from "@electric-sql/pglite";
+import pg from "pg";
 
-if (!fs.existsSync("./data")) {
-  fs.mkdirSync("./data");
-}
+const { Pool } = pg;
 
-export const db = new PGlite("./data/financas");
+export const db = new Pool({
+  host: "localhost",
+  port: 5432,
+  database: "financeiro",
+  user: "financeiro_user",
+  password: "F4chini_0312"
+});
