@@ -1,11 +1,18 @@
-import { Router } from 'express';
-import { listarReceber, criarReceber, marcarComoRecebido, excluirReceber } from '../controllers/receber.controller.js';
+import { Router } from "express";
+import {
+  listarReceber,
+  criarReceber,
+  marcarComoRecebido,
+  excluirReceber
+} from "../controllers/receber.controller.js";
+
+import { auth } from "../middlewares/auth.js";
 
 const router = Router();
 
-router.get('/', listarReceber);
-router.post('/', criarReceber);
-router.patch('/:id/receber', marcarComoRecebido);
-router.delete('/:id', excluirReceber);
+router.get("/", auth, listarReceber);
+router.post("/", auth, criarReceber);
+router.patch("/:id/receber", auth, marcarComoRecebido);
+router.delete("/:id", auth, excluirReceber);
 
 export default router;

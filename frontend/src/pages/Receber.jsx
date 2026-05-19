@@ -1,109 +1,103 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
 import FinanceModal from "../components/FinanceModal";
 
 export default function Receber() {
-
   const [open, setOpen] = useState(false);
+  const [dados, setDados] = useState([]);
 
-  const [dados, setDados] = useState([
-    {
-      id: 1,
-      nome: "Cliente 1",
-      total: "R$ 500,00",
-      recebido: "R$ 100,00",
-      restante: "R$ 400,00"
-    },
+  async function carregar() {
+    const { data } = await api.get("/receber");
+    setDados(data);
+  }
 
-    {
-      id: 2,
-      nome: "Cliente 2",
-      total: "R$ 900,00",
-      recebido: "R$ 300,00",
-      restante: "R$ 600,00"
-    }
-  ]);
+  async function excluir(id) {
+    await api.delete(`/receber/${id}`);
+    carregar();
+  }
 
-  function excluir(id) {
-    setDados(
-      dados.filter(item => item.id !== id)
-    );
+  async function marcarRecebido(id) {
+    await api.patch(`/receber/${id}/receber`);
+    carregar();
+  }
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const total = dados.reduce((soma, item) => soma + Number(item.valor), 0);
+
+  const recebido = dados
+    .filter(item => item.status === "recebido")
+    .reduce((soma, item) => soma + Number(item.valor), 0);
+
+  const restante = total - recebido;
+
+  function formatar(valor) {
+    return Number(valor).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
   }
 
   return (
     <div>
-
-      <h1 className="page-title">
-        Contas a receber
-      </h1>
+      <h1 className="page-title">Contas a receber</h1>
 
       <p className="subtitle">
         Listagem financeira com pagamentos parciais.
       </p>
 
       <div className="top-actions">
-
         <button onClick={() => setOpen(true)}>
           + Adicionar recebimento
         </button>
-
       </div>
 
       <div className="cards">
-
         <div className="card">
           <span>Total</span>
-          <strong>R$ 29.167,00</strong>
+          <strong>{formatar(total)}</strong>
         </div>
 
         <div className="card">
           <span>Recebido</span>
-          <strong>R$ 334,00</strong>
+          <strong>{formatar(recebido)}</strong>
         </div>
 
         <div className="card">
           <span>Restante</span>
-          <strong>R$ 28.833,00</strong>
+          <strong>{formatar(restante)}</strong>
         </div>
-
       </div>
 
       <div className="table-box">
-
         <table>
-
           <thead>
             <tr>
-              <th>NOME</th>
-              <th>TOTAL</th>
-              <th>RECEBIDO</th>
-              <th>RESTANTE</th>
+              <th>DESCRIÇÃO</th>
+              <th>VALOR</th>
+              <th>VENCIMENTO</th>
+              <th>STATUS</th>
               <th>AÇÕES</th>
             </tr>
           </thead>
 
           <tbody>
-
             {dados.map(item => (
-
               <tr key={item.id}>
-
-                <td>{item.nome}</td>
-
-                <td>{item.total}</td>
-
-                <td>{item.recebido}</td>
-
-                <td className="value-orange">
-                  {item.restante}
-                </td>
+                <td>{item.descricao}</td>
+                <td>{formatar(item.valor)}</td>
+                <td>{new Date(item.vencimento).toLocaleDateString("pt-BR")}</td>
+                <td>{item.status}</td>
 
                 <td>
-
                   <div className="actions">
-
-                    <button>
-                      Receber
-                    </button>
+                    {item.status === "pendente" && (
+                      <button onClick={() => marcarRecebido(item.id)}>
+                        Receber
+                      </button>
+                    )}
 
                     <button
                       className="danger-btn"
@@ -111,28 +105,23 @@ export default function Receber() {
                     >
                       Excluir
                     </button>
-
                   </div>
-
                 </td>
-
               </tr>
-
             ))}
-
           </tbody>
-
         </table>
-
       </div>
 
       {open && (
         <FinanceModal
           tipo="Receber"
-          onClose={() => setOpen(false)}
+          onClose={() => {
+            setOpen(false);
+            carregar();
+          }}
         />
       )}
-
     </div>
   );
 }

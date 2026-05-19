@@ -1,38 +1,43 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
 import FinanceModal from "../components/FinanceModal";
 
 export default function Pagar() {
   const [open, setOpen] = useState(false);
+  const [dados, setDados] = useState([]);
 
-  const [dados, setDados] = useState([
-    {
-      id: 1,
-      nome: "Aluguel",
-      total: "R$ 1.500,00",
-      pago: "R$ 1.500,00",
-      restante: "R$ 0,00",
-      quitado: true
-    },
-    {
-      id: 2,
-      nome: "Internet",
-      total: "R$ 250,00",
-      pago: "R$ 0,00",
-      restante: "R$ 250,00",
-      quitado: false
-    },
-    {
-      id: 3,
-      nome: "Energia",
-      total: "R$ 890,00",
-      pago: "R$ 300,00",
-      restante: "R$ 590,00",
-      quitado: false
-    }
-  ]);
+  async function carregar() {
+    const { data } = await api.get("/pagar");
+    setDados(data);
+  }
 
-  function excluir(id) {
-    setDados(dados.filter(item => item.id !== id));
+  async function excluir(id) {
+    await api.delete(`/pagar/${id}`);
+    carregar();
+  }
+
+  async function marcarPago(id) {
+    await api.patch(`/pagar/${id}/pagar`);
+    carregar();
+  }
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const total = dados.reduce((soma, item) => soma + Number(item.valor), 0);
+
+  const pago = dados
+    .filter(item => item.status === "pago")
+    .reduce((soma, item) => soma + Number(item.valor), 0);
+
+  const restante = total - pago;
+
+  function formatar(valor) {
+    return Number(valor).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
   }
 
   return (
@@ -52,17 +57,17 @@ export default function Pagar() {
       <div className="cards">
         <div className="card">
           <span>Total</span>
-          <strong>R$ 12.450,00</strong>
+          <strong>{formatar(total)}</strong>
         </div>
 
         <div className="card">
           <span>Pago</span>
-          <strong>R$ 3.200,00</strong>
+          <strong>{formatar(pago)}</strong>
         </div>
 
         <div className="card">
           <span>Restante</span>
-          <strong>R$ 9.250,00</strong>
+          <strong>{formatar(restante)}</strong>
         </div>
       </div>
 
@@ -70,10 +75,10 @@ export default function Pagar() {
         <table>
           <thead>
             <tr>
-              <th>NOME</th>
-              <th>TOTAL</th>
-              <th>PAGO</th>
-              <th>RESTANTE</th>
+              <th>DESCRIÇÃO</th>
+              <th>VALOR</th>
+              <th>VENCIMENTO</th>
+              <th>STATUS</th>
               <th>AÇÕES</th>
             </tr>
           </thead>
@@ -81,17 +86,18 @@ export default function Pagar() {
           <tbody>
             {dados.map(item => (
               <tr key={item.id}>
-                <td>{item.nome}</td>
-                <td>{item.total}</td>
-                <td>{item.pago}</td>
-
-                <td className={item.quitado ? "value-green" : "value-orange"}>
-                  {item.restante}
-                </td>
+                <td>{item.descricao}</td>
+                <td>{formatar(item.valor)}</td>
+                <td>{new Date(item.vencimento).toLocaleDateString("pt-BR")}</td>
+                <td>{item.status}</td>
 
                 <td>
                   <div className="actions">
-                    <button>Pagar</button>
+                    {item.status === "pendente" && (
+                      <button onClick={() => marcarPago(item.id)}>
+                        Pagar
+                      </button>
+                    )}
 
                     <button
                       className="danger-btn"
@@ -110,7 +116,10 @@ export default function Pagar() {
       {open && (
         <FinanceModal
           tipo="Pagar"
-          onClose={() => setOpen(false)}
+          onClose={() => {
+            setOpen(false);
+            carregar();
+          }}
         />
       )}
     </div>

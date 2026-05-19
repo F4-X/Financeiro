@@ -1,15 +1,34 @@
 import { useState } from "react";
+import { api } from "../services/api";
 
 export default function FinanceModal({ tipo, onClose }) {
-  const [itens, setItens] = useState([
-    { nome: "", valor: "" }
-  ]);
+  const [form, setForm] = useState({
+    data: "",
+    nome: "",
+    descricao: "",
+    categoria: "",
+    valor: "",
+    observacao: ""
+  });
 
-  function adicionarItem() {
-    setItens([
-      ...itens,
-      { nome: "", valor: "" }
-    ]);
+  function alterarCampo(e) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+  }
+
+  async function salvar() {
+    const rota = tipo === "Pagar" ? "/pagar" : "/receber";
+
+    await api.post(rota, {
+      descricao: form.descricao || form.nome,
+      valor: Number(form.valor),
+      vencimento: form.data,
+      observacao: form.observacao || form.categoria
+    });
+
+    onClose();
   }
 
   return (
@@ -22,29 +41,55 @@ export default function FinanceModal({ tipo, onClose }) {
         <div className="grid-1">
           <div>
             <label>Data</label>
-            <input type="date" />
+            <input
+              type="date"
+              name="data"
+              value={form.data}
+              onChange={alterarCampo}
+            />
           </div>
         </div>
 
         <div className="form-group">
           <label>Cliente/Fornecedor</label>
-          <input type="text" />
+          <input
+            type="text"
+            name="nome"
+            value={form.nome}
+            onChange={alterarCampo}
+          />
         </div>
 
         <div className="form-group">
           <label>Descrição</label>
-          <textarea rows="4"></textarea>
+          <textarea
+            rows="4"
+            name="descricao"
+            value={form.descricao}
+            onChange={alterarCampo}
+          />
         </div>
 
         <div className="grid-2">
           <div>
             <label>Categoria</label>
-            <input type="text" />
+            <input
+              type="text"
+              name="categoria"
+              value={form.categoria}
+              onChange={alterarCampo}
+            />
           </div>
 
           <div>
             <label>Valor total</label>
-            <input type="number" placeholder="0.00" />
+            <input
+              type="number"
+              name="valor"
+              placeholder="0.00"
+              value={form.valor}
+              onChange={alterarCampo}
+            />
           </div>
         </div>
 
@@ -55,27 +100,14 @@ export default function FinanceModal({ tipo, onClose }) {
           </label>
         )}
 
-        <div className="items-title">
-          <h3>Itens</h3>
-        </div>
-
-        {itens.map((item, index) => (
-          <div className="item-row" key={index}>
-            <input placeholder="Item" />
-            <input placeholder="Valor" type="number" />
-          </div>
-        ))}
-
-        <button className="add-item-btn" onClick={adicionarItem}>
-          + adicionar item
-        </button>
-
         <div className="modal-actions">
           <button className="secondary" onClick={onClose}>
             Cancelar
           </button>
 
-          <button>Salvar</button>
+          <button onClick={salvar}>
+            Salvar
+          </button>
         </div>
       </div>
     </div>
