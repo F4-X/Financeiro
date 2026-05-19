@@ -110,6 +110,54 @@ export async function marcarComoPago(req, res) {
   });
 }
 
+export async function editarPagar(req, res) {
+  const usuarioId = req.usuario.id;
+  const { id } = req.params;
+
+  const {
+    descricao,
+    valor,
+    vencimento,
+    observacao
+  } = req.body;
+
+  if (!descricao || !valor || !vencimento) {
+    return res.status(400).json({
+      error: "Descrição, valor e vencimento são obrigatórios."
+    });
+  }
+
+  const result = await db.query(
+    `
+    UPDATE pagar
+    SET
+      descricao = $1,
+      valor = $2,
+      vencimento = $3,
+      observacao = $4
+    WHERE id = $5
+    AND usuario_id = $6
+    RETURNING *
+    `,
+    [
+      descricao,
+      valor,
+      vencimento,
+      observacao || null,
+      id,
+      usuarioId
+    ]
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({
+      error: "Conta a pagar não encontrada."
+    });
+  }
+
+  res.json(result.rows[0]);
+}
+
 export async function excluirPagar(req, res) {
   const usuarioId = req.usuario.id;
   const { id } = req.params;
