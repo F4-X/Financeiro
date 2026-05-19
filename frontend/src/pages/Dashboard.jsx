@@ -24,11 +24,14 @@ export default function Dashboard() {
     });
   }
 
-  function dataBR(data) {
-    if (!data) return "";
-    return new Date(data).toLocaleDateString("pt-BR");
-  }
+function dataBR(data) {
+  if (!data) return "";
 
+  const somenteData = String(data).split("T")[0];
+  const [ano, mes, dia] = somenteData.split("-");
+
+  return `${dia}/${mes}/${ano}`;
+}
   function restantePagar(item) {
     return Math.max(
       Number(item.valor || 0) - Number(item.valor_pago || 0),

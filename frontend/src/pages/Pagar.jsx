@@ -46,11 +46,14 @@ export default function Pagar() {
     });
   }
 
-  function formatarData(data) {
-    if (!data) return "-";
+ function formatarData(data) {
+  if (!data) return "-";
 
-    return new Date(data).toLocaleDateString("pt-BR");
-  }
+  const somenteData = String(data).split("T")[0];
+  const [ano, mes, dia] = somenteData.split("-");
+
+  return `${dia}/${mes}/${ano}`;
+}
 
   function valorPagoItem(item) {
     return Number(item.valor_pago || 0);
