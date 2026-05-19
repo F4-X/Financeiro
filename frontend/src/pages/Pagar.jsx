@@ -48,6 +48,7 @@ export default function Pagar() {
 
   function formatarData(data) {
     if (!data) return "-";
+
     return new Date(data).toLocaleDateString("pt-BR");
   }
 
@@ -60,17 +61,34 @@ export default function Pagar() {
   }
 
   function restanteItem(item) {
-    return Math.max(valorTotalItem(item) - valorPagoItem(item), 0);
+    return Math.max(
+      valorTotalItem(item) - valorPagoItem(item),
+      0
+    );
   }
 
   const dadosFiltrados = dados.filter(item => {
     const texto = pesquisa.toLowerCase();
 
-    const descricao = String(item.descricao || "").toLowerCase();
-    const observacao = String(item.observacao || "").toLowerCase();
-    const valor = String(item.valor || "").toLowerCase();
-    const valorFormatado = formatar(item.valor).toLowerCase();
-    const data = item.vencimento ? formatarData(item.vencimento) : "";
+    const descricao = String(
+      item.descricao || ""
+    ).toLowerCase();
+
+    const observacao = String(
+      item.observacao || ""
+    ).toLowerCase();
+
+    const valor = String(
+      item.valor || ""
+    ).toLowerCase();
+
+    const valorFormatado = formatar(
+      item.valor
+    ).toLowerCase();
+
+    const data = item.vencimento
+      ? formatarData(item.vencimento)
+      : "";
 
     return (
       descricao.includes(texto) ||
@@ -95,7 +113,9 @@ export default function Pagar() {
 
   return (
     <div>
-      <h1 className="page-title">Contas a pagar</h1>
+      <h1 className="page-title">
+        Contas a pagar
+      </h1>
 
       <p className="subtitle">
         Controle financeiro de despesas e pagamentos.
@@ -131,11 +151,14 @@ export default function Pagar() {
 
       <div className="panel">
         <label>Pesquisar</label>
+
         <input
           type="text"
           placeholder="Pesquisar por fornecedor, data ou valor..."
           value={pesquisa}
-          onChange={e => setPesquisa(e.target.value)}
+          onChange={e =>
+            setPesquisa(e.target.value)
+          }
         />
       </div>
 
@@ -148,6 +171,7 @@ export default function Pagar() {
               <th>PROGRESSO</th>
               <th>VENCIMENTO</th>
               <th>STATUS</th>
+              <th>ANEXO</th>
               <th>AÇÕES</th>
             </tr>
           </thead>
@@ -155,40 +179,84 @@ export default function Pagar() {
           <tbody>
             {dadosFiltrados.map(item => (
               <tr key={item.id}>
-                <td>{item.descricao || "-"}</td>
-                <td>{formatar(item.valor)}</td>
+                <td>
+                  {item.descricao || "-"}
+                </td>
+
+                <td>
+                  {formatar(item.valor)}
+                </td>
 
                 <td>
                   <strong>
-                    {formatar(valorPagoItem(item))} / {formatar(valorTotalItem(item))}
+                    {formatar(
+                      valorPagoItem(item)
+                    )}{" "}
+                    /{" "}
+                    {formatar(
+                      valorTotalItem(item)
+                    )}
                   </strong>
+
                   <br />
+
                   <small>
-                    Restante: {formatar(restanteItem(item))}
+                    Restante:{" "}
+                    {formatar(
+                      restanteItem(item)
+                    )}
                   </small>
                 </td>
 
-                <td>{formatarData(item.vencimento)}</td>
+                <td>
+                  {formatarData(
+                    item.vencimento
+                  )}
+                </td>
+
                 <td>{item.status}</td>
+
+                <td>
+                  {item.arquivo_url ? (
+                    <a
+                      href={`https://api.meufinanceiro2.com${item.arquivo_url}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir
+                    </a>
+                  ) : (
+                    "-"
+                  )}
+                </td>
 
                 <td>
                   <div className="actions">
                     {item.status !== "pago" && (
-                      <button onClick={() => setPagando(item)}>
+                      <button
+                        onClick={() =>
+                          setPagando(item)
+                        }
+                      >
                         Pagar
                       </button>
                     )}
 
-                    <button onClick={() => editar(item)}>
+                    <button
+                      onClick={() =>
+                        editar(item)
+                      }
+                    >
                       Editar
                     </button>
 
                     <button
                       className="danger-btn"
                       onClick={() => {
-                        const confirmar = window.confirm(
-                          "Tem certeza que deseja excluir esta conta?"
-                        );
+                        const confirmar =
+                          window.confirm(
+                            "Tem certeza que deseja excluir esta conta?"
+                          );
 
                         if (confirmar) {
                           excluir(item.id);
@@ -209,22 +277,44 @@ export default function Pagar() {
         <div className="modal-overlay">
           <div className="finance-modal">
             <div className="modal-header">
-              <h2>Registrar pagamento</h2>
+              <h2>
+                Registrar pagamento
+              </h2>
             </div>
 
             <p className="subtitle">
-              Total: {formatar(pagando.valor)} <br />
-              Pago: {formatar(pagando.valor_pago)} <br />
-              Restante: {formatar(restanteItem(pagando))}
+              Total:{" "}
+              {formatar(
+                pagando.valor
+              )}{" "}
+              <br />
+
+              Pago:{" "}
+              {formatar(
+                pagando.valor_pago
+              )}{" "}
+              <br />
+
+              Restante:{" "}
+              {formatar(
+                restanteItem(pagando)
+              )}
             </p>
 
             <div className="form-group">
-              <label>Valor pago agora</label>
+              <label>
+                Valor pago agora
+              </label>
+
               <input
                 type="number"
                 placeholder="0.00"
                 value={valorParcial}
-                onChange={e => setValorParcial(e.target.value)}
+                onChange={e =>
+                  setValorParcial(
+                    e.target.value
+                  )
+                }
               />
             </div>
 
@@ -239,7 +329,11 @@ export default function Pagar() {
                 Cancelar
               </button>
 
-              <button onClick={confirmarPagamento}>
+              <button
+                onClick={
+                  confirmarPagamento
+                }
+              >
                 Confirmar
               </button>
             </div>
