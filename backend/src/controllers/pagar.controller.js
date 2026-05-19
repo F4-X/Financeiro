@@ -187,15 +187,21 @@ export async function excluirPagar(req, res) {
   const usuarioId = req.usuario.id;
   const { id } = req.params;
 
-  await db.query(
+  const result = await db.query(
     `
     DELETE FROM pagar
     WHERE id = $1
     AND usuario_id = $2
-    AND status = 'pendente'
+    RETURNING *
     `,
     [id, usuarioId]
   );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({
+      error: "Conta a pagar não encontrada."
+    });
+  }
 
   res.json({
     message: "Conta a pagar excluída."
