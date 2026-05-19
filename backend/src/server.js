@@ -12,7 +12,7 @@ import authRoutes from "./routes/auth.routes.js";
 
 const app = express();
 
-const PORT = 3001;
+const PORT = 3003;
 
 app.use(cors({
   origin: [
