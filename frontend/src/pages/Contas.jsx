@@ -1,20 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
 
 export default function Contas() {
-  const [usuarios, setUsuarios] = useState([
-    {
-      id: 1,
-      nome: "Administrador",
-      email: "admin@email.com",
-      perfil: "admin"
-    },
-    {
-      id: 2,
-      nome: "Usuário comum",
-      email: "usuario@email.com",
-      perfil: "comum"
-    }
-  ]);
+  const [usuarios, setUsuarios] = useState([]);
 
   const [form, setForm] = useState({
     nome: "",
@@ -23,6 +11,15 @@ export default function Contas() {
     perfil: "comum"
   });
 
+  async function carregarUsuarios() {
+    const { data } = await api.get("/contas");
+    setUsuarios(data);
+  }
+
+  useEffect(() => {
+    carregarUsuarios();
+  }, []);
+
   function alterarCampo(e) {
     setForm({
       ...form,
@@ -30,17 +27,10 @@ export default function Contas() {
     });
   }
 
-  function cadastrarUsuario(e) {
+  async function cadastrarUsuario(e) {
     e.preventDefault();
 
-    const novoUsuario = {
-      id: Date.now(),
-      nome: form.nome,
-      email: form.email,
-      perfil: form.perfil
-    };
-
-    setUsuarios([...usuarios, novoUsuario]);
+    await api.post("/contas", form);
 
     setForm({
       nome: "",
@@ -48,10 +38,20 @@ export default function Contas() {
       senha: "",
       perfil: "comum"
     });
+
+    carregarUsuarios();
   }
 
-  function excluirUsuario(id) {
-    setUsuarios(usuarios.filter(usuario => usuario.id !== id));
+  async function excluirUsuario(id) {
+    const confirmar = window.confirm(
+      "Tem certeza que deseja excluir este usuário?"
+    );
+
+    if (!confirmar) return;
+
+    await api.delete(`/contas/${id}`);
+
+    carregarUsuarios();
   }
 
   return (
@@ -164,6 +164,14 @@ export default function Contas() {
                 </td>
               </tr>
             ))}
+
+            {usuarios.length === 0 && (
+              <tr>
+                <td colSpan="4">
+                  Nenhum usuário cadastrado.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
