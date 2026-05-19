@@ -5,6 +5,7 @@ import FinanceModal from "../components/FinanceModal";
 export default function Pagar() {
   const [open, setOpen] = useState(false);
   const [dados, setDados] = useState([]);
+  const [editando, setEditando] = useState(null);
 
   async function carregar() {
     const { data } = await api.get("/pagar");
@@ -19,6 +20,11 @@ export default function Pagar() {
   async function marcarPago(id) {
     await api.patch(`/pagar/${id}/pagar`);
     carregar();
+  }
+
+  function editar(item) {
+    setEditando(item);
+    setOpen(true);
   }
 
   useEffect(() => {
@@ -49,7 +55,12 @@ export default function Pagar() {
       </p>
 
       <div className="top-actions">
-        <button onClick={() => setOpen(true)}>
+        <button
+          onClick={() => {
+            setEditando(null);
+            setOpen(true);
+          }}
+        >
           + Adicionar pagamento
         </button>
       </div>
@@ -99,6 +110,10 @@ export default function Pagar() {
                       </button>
                     )}
 
+                    <button onClick={() => editar(item)}>
+                      Editar
+                    </button>
+
                     <button
                       className="danger-btn"
                       onClick={() => excluir(item.id)}
@@ -116,8 +131,10 @@ export default function Pagar() {
       {open && (
         <FinanceModal
           tipo="Pagar"
+          dadosEdicao={editando}
           onClose={() => {
             setOpen(false);
+            setEditando(null);
             carregar();
           }}
         />
