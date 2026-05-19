@@ -2,6 +2,8 @@ import { useState } from "react";
 import { api } from "../services/api";
 
 export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
+  const [arquivo, setArquivo] = useState(null);
+
   const [itens, setItens] = useState(
     dadosEdicao?.itens?.length
       ? dadosEdicao.itens
@@ -57,18 +59,38 @@ export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
       ? Number(form.valor)
       : somaItens;
 
-    const payload = {
-      descricao: form.descricao || form.nome || "",
-      valor: Number(valorFinal || 0),
-      vencimento: form.data || null,
-      observacao: form.categoria || "",
-      itens: itensFiltrados
-    };
+    if (tipo === "Pagar") {
+      const formData = new FormData();
 
-    if (dadosEdicao) {
-      await api.put(`${rota}/${dadosEdicao.id}`, payload);
+      formData.append("descricao", form.descricao || form.nome || "");
+      formData.append("valor", Number(valorFinal || 0));
+      formData.append("vencimento", form.data || "");
+      formData.append("observacao", form.categoria || "");
+      formData.append("itens", JSON.stringify(itensFiltrados));
+
+      if (arquivo) {
+        formData.append("arquivo", arquivo);
+      }
+
+      if (dadosEdicao) {
+        await api.put(`${rota}/${dadosEdicao.id}`, formData);
+      } else {
+        await api.post(rota, formData);
+      }
     } else {
-      await api.post(rota, payload);
+      const payload = {
+        descricao: form.descricao || form.nome || "",
+        valor: Number(valorFinal || 0),
+        vencimento: form.data || null,
+        observacao: form.categoria || "",
+        itens: itensFiltrados
+      };
+
+      if (dadosEdicao) {
+        await api.put(`${rota}/${dadosEdicao.id}`, payload);
+      } else {
+        await api.post(rota, payload);
+      }
     }
 
     onClose();
@@ -146,10 +168,33 @@ export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
         </div>
 
         {tipo === "Pagar" && (
-          <label className="upload-box">
-            📎 Anexar imagem ou PDF da conta
-            <input type="file" accept="image/*,.pdf" hidden />
-          </label>
+          <>
+            <label className="upload-box">
+              {arquivo
+                ? `📎 ${arquivo.name}`
+                : "📎 Anexar imagem ou PDF da conta"}
+
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                hidden
+                onChange={e => setArquivo(e.target.files[0])}
+              />
+            </label>
+
+            {dadosEdicao?.arquivo_url && (
+              <p className="subtitle">
+                Arquivo atual:{" "}
+                <a
+                  href={`https://api.meufinanceiro2.com${dadosEdicao.arquivo_url}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  abrir anexo
+                </a>
+              </p>
+            )}
+          </>
         )}
 
         <div className="items-title">
