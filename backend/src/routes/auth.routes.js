@@ -43,9 +43,7 @@ router.post("/login", async (req, res) => {
       perfil: usuario.perfil
     },
     JWT_SECRET,
-    {
-      expiresIn: "7d"
-    }
+    { expiresIn: "7d" }
   );
 
   res.json({
