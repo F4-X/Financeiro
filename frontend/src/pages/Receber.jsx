@@ -158,11 +158,19 @@ export default function Receber() {
                     </button>
 
                     <button
-                      className="danger-btn"
-                      onClick={() => excluir(item.id)}
-                    >
-                      Excluir
-                    </button>
+  className="danger-btn"
+  onClick={() => {
+    const confirmar = window.confirm(
+      "Tem certeza que deseja excluir esta conta?"
+    );
+
+    if (confirmar) {
+      excluir(item.id);
+    }
+  }}
+>
+  Excluir
+</button>
                   </div>
                 </td>
               </tr>
