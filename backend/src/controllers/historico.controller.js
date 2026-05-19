@@ -1,11 +1,20 @@
-import { db } from '../database/db.js';
+import { db } from "../database/db.js";
 
 export async function listarHistorico(req, res) {
-  const result = await db.query(`
-    SELECT h.*, c.nome AS conta_nome
-    FROM historico h
-    LEFT JOIN contas c ON c.id = h.conta_id
-    ORDER BY h.data_movimento DESC
-  `);
-  res.json(result.rows);
+  try {
+    const result = await db.query(`
+      SELECT *
+      FROM historico
+      ORDER BY data_movimento DESC
+    `);
+
+    res.json(result.rows);
+
+  } catch (error) {
+    console.error("Erro ao listar histórico:", error);
+
+    res.status(500).json({
+      error: "Erro ao listar histórico."
+    });
+  }
 }
