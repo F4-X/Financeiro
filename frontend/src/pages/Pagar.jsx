@@ -223,7 +223,7 @@ export default function Pagar() {
   {item.arquivo_url ? (
     <a
       className="anexo-btn"
-      href={`https://api.meufinanceiro2.com${item.arquivo_url}`}
+      href={`https://meufinanceiro2.com/api${item.arquivo_url}`}
       target="_blank"
       rel="noreferrer"
     >

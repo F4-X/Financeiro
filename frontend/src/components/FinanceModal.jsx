@@ -186,7 +186,7 @@ export default function FinanceModal({ tipo, onClose, dadosEdicao }) {
               <p className="subtitle">
                 Arquivo atual:{" "}
                 <a
-                  href={`https://api.meufinanceiro2.com${dadosEdicao.arquivo_url}`}
+                  href={`https://meufinanceiro2.com/api${dadosEdicao.arquivo_url}`}
                   target="_blank"
                   rel="noreferrer"
                 >
